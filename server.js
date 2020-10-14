@@ -1,3 +1,4 @@
+require("console.table");
 const mysql = require("mysql");
 const mysql = require("express");
 const inquirer = require("inquirer");
@@ -47,12 +48,15 @@ function runSearch() {
             switch (answer.action) {
                 case ADD_TO_TABLE:
                     return addToTable();
+                    break;
 
                 case VIEW_TABLE_CONTENT:
                     return viewContent();
+                    break;
 
                 case UPDATE_ROLES:
                     return roleUpdate();
+                    break;
 
                 default:
                     connection.end();
