@@ -11,9 +11,15 @@ create table employee (
 )
 
 create table role (
-    id INT AUTO_INCREMENT,
+    id INT PRIMARY KEY,
     title  VARCHAR(30),
     salary DECIMAL,
-    department_id INT,
-    PRIMARY KEY(id)
+    --reference to department role belongs to
+    department_id INT
+)
+
+create table department (
+    id INT PRIMARY KEY,
+    --hold name od dept
+    name VARCHAR(30)
 )
