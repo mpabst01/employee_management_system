@@ -3,6 +3,7 @@ const mysql = require("mysql");
 const mysql = require("express");
 const inquirer = require("inquirer");
 
+
 // create the connection information for the sql database
 const connection = mysql.createConnection({
     host: "localhost",
@@ -22,10 +23,10 @@ connection.connect((err) => {
     if (err) {
         throw err;
     }
-    runSearch();
+    search();
 });
 
-function runSearch() {
+function search() {
     // constants enumerating search options
     const ADD_TO_TABLE = "Add departments, roles, employees";
     const VIEW_TABLE_CONTENT =
@@ -58,156 +59,178 @@ function runSearch() {
                     return roleUpdate();
                     break;
 
-                default:
+                case "exit":
                     connection.end();
+                    break;
             }
         });
-}
+};
 
 function addToTable() {
-    inquirer
-        .prompt({
-            name: "first_name",
-            type: "input",
-            message: "What would you like to add?",
-        })
-        .then((answer) => {
-            const query = "SELECT id, first_name, last_name FROM employees WHERE ?";
-            connection.query(query, { artist: answer.artist }, (err, res) => {
-                for (let i = 0; i < res.length; i++) {
-                    console.log(
-                        "Position: " +
-                        res[i].position +
-                        " || Song: " +
-                        res[i].song +
-                        " || Year: " +
-                        res[i].year
+    return connection.query(`SELECT distinct role.id, role.title from role;`, (err, res_a) => {
+        if (err) {
+            throw err;
+        };
+
+        const namesRole = res_a.map((row) => row.title);
+
+        return connection.query(`SELECT distinct employee.id, CONCAT(employee.first_name," ",employee.last_name) as name FROM employee;`, (err, res_b) => {
+            if (err) {
+                throw err;
+            };
+
+            const namesManager = res_b.map((row) => row.name);
+
+            return inquirer
+                .prompt([
+                    {
+                        name: "firstName",
+                        type: "input",
+                        message: "What is the employee's first name?",
+                    },
+                    {
+                        name: "lastName",
+                        type: "input",
+                        message: "What is the employee's last name?",
+                    },
+                    {
+                        name: "role",
+                        type: "list",
+                        message: "What is the employee's job title?",
+                        choices: namesRole,
+                    },
+                    {
+                        name: "manager",
+                        type: "list",
+                        message: "Who is the employee's manager?",
+                        choices: namesManager,
+                    }
+                ])
+                .then((answers) => {
+                    const selectedRole = res_a.find(
+                        (row) => row.title === answers.role
                     );
-                }
-                runSearch();
-            });
+                    const selectedManager = res_b.find(
+                        (row) => row.name === answers.manager
+                    );
+
+                    return connection.query(
+                        "INSERT INTO employee SET ?",
+                        {
+                            first_name: answers.firstName,
+                            last_name: answers.lastName,
+                            role_id: selectedRole.id,
+                            manager_id: selectedManager.id
+                        },
+                        (err) => {
+                            if (err) {
+                                throw err;
+                            }
+                            return start();
+                        }
+                    );
+                });
         });
-}
+    })
+};
 
 function viewContent() {
-    const query =
-        "SELECT artist FROM top5000 GROUP BY artist HAVING count(*) > 1";
-    connection.query(query, (err, res) => {
-        for (let i = 0; i < res.length; i++) {
-            console.log(res[i].artist);
-        }
-        runSearch();
-    });
-}
+    return connection.query(
+        `SELECT subs.id,
+        subs.first_name,
+        subs.last_name,
+        role.title as 'job title',
+        department.name as department,
+        role.salary, 
+        concat(managers.first_name,' ', managers.last_name) as manager 
+        from employee as subs
+        left join employee as managers
+        on subs.manager_id = managers.id
+        inner join role
+        on subs.role_id = role.id
+        inner join department
+        on department.id = role.department_id;`,
+        (err, results) => {
+            if (err) {
+                throw err;
+            };
+            console.log("");
+            console.log("");
+            console.table(results);
+            console.log("");
+            console.log("");
+            return start();
+        });
+
+};
 
 function roleUpdate() {
-    inquirer
-        .prompt([
-            {
-                name: "role",
-                type: "input",
-                message: "What role would you like to update?",
-                choices: [roles, employees, departments]
-            },
-            {
-                name: "end",
-                type: "input",
-                message: "Enter ending position: ",
-                validate: (value) => {
-                    if (isNaN(value) === false) {
-                        return true;
-                    }
-                    return false;
-                },
-            },
-        ])
-        .then((answer) => {
-            const query =
-                "SELECT position,song,artist,year FROM top5000 WHERE position BETWEEN ? AND ?";
-            connection.query(query, [answer.start, answer.end], (err, res) => {
-                for (let i = 0; i < res.length; i++) {
-                    console.log(
-                        "Position: " +
-                        res[i].position +
-                        " || Song: " +
-                        res[i].song +
-                        " || Artist: " +
-                        res[i].artist +
-                        " || Year: " +
-                        res[i].year
-                    );
+    return connection.query(`SELECT distinct employee.id AS id, CONCAT(employee.first_name," ",employee.last_name) as name from employee;`,
+     (err, res_a) => {
+        if (err) {
+            throw err;
+        };
+
+        const nameEmployee = res_a.map((row) => row.name);
+
+        return inquirer
+            .prompt([
+                {
+                    name: "employee",
+                    type: "list",
+                    message: "Which employee would you like to modify?",
+                    choices: nameEmployee,
                 }
-                runSearch();
+            ])
+            .then((answers) => {
+
+                const selectedEmployee = res_a.find(
+                    (row) => row.name === answers.employee
+                );
+
+                return connection.query(`SELECT distinct role.id AS id, role.title FROM role;`, (err, res_b) => {
+                    if (err) {
+                        throw err;
+                    };
+
+                    const titleOfRole = res_b.map((row) => row.title);
+
+                    return inquirer
+                        .prompt([
+                            {
+                                name: "role",
+                                type: "list",
+                                message: "Which role do you want to give the employee?",
+                                choices: titleOfRole,
+                            }
+                        ])
+                        .then((answers) => {
+
+                            const chosenRole = res_b.find(
+                                (row) => row.title === answers.role
+                            );
+
+                            return connection.query(
+                                "UPDATE employee SET employee.role_id = ? WHERE employee.id = ?",
+                                [chosenRole.id, selectedEmployee.id],
+                                (err) => {
+                                    if (err) {
+                                        throw err;
+                                    }
+                                    console.log("");
+                                    console.log("");
+                                    return start();
+                                }
+                            );
+
+                        });
+
+                });
+
             });
-        });
+    })
+
 }
 
-function songSearch() {
-    inquirer
-        .prompt({
-            name: "song",
-            type: "input",
-            message: "What song would you like to look for?",
-        })
-        .then((answer) => {
-            console.log(answer.song);
-            connection.query(
-                "SELECT * FROM top5000 WHERE ?",
-                { song: answer.song },
-                (err, res) => {
-                    console.log(
-                        "Position: " +
-                        res[0].position +
-                        " || Song: " +
-                        res[0].song +
-                        " || Artist: " +
-                        res[0].artist +
-                        " || Year: " +
-                        res[0].year
-                    );
-                    runSearch();
-                }
-            );
-        });
-}
 
-function songAndAlbumSearch() {
-    inquirer
-        .prompt({
-            name: "artist",
-            type: "input",
-            message: "What artist would you like to search for?",
-        })
-        .then((answer) => {
-            let query =
-                "SELECT top_albums.year, top_albums.album, top_albums.position, top5000.song, top5000.artist ";
-            query +=
-                "FROM top_albums INNER JOIN top5000 ON (top_albums.artist = top5000.artist AND top_albums.year ";
-            query +=
-                "= top5000.year) WHERE (top_albums.artist = ? AND top5000.artist = ?) ORDER BY top_albums.year, top_albums.position";
-
-            connection.query(query, [answer.artist, answer.artist], (err, res) => {
-                console.log(res.length + " matches found!");
-                for (let i = 0; i < res.length; i++) {
-                    console.log(
-                        i +
-                        1 +
-                        ".) " +
-                        "Year: " +
-                        res[i].year +
-                        " Album Position: " +
-                        res[i].position +
-                        " || Artist: " +
-                        res[i].artist +
-                        " || Song: " +
-                        res[i].song +
-                        " || Album: " +
-                        res[i].album
-                    );
-                }
-
-                runSearch();
-            });
-        });
-}
 
