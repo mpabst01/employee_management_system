@@ -63,12 +63,12 @@ function runSearch() {
 function addToTable() {
     inquirer
         .prompt({
-            name: "artist",
+            name: "first_name",
             type: "input",
-            message: "What artist would you like to search for?",
+            message: "What would you like to add?",
         })
         .then((answer) => {
-            const query = "SELECT position, song, year FROM top5000 WHERE ?";
+            const query = "SELECT id, first_name, last_name FROM employees WHERE ?";
             connection.query(query, { artist: answer.artist }, (err, res) => {
                 for (let i = 0; i < res.length; i++) {
                     console.log(
@@ -103,6 +103,7 @@ function roleUpdate() {
                 name: "role",
                 type: "input",
                 message: "What role would you like to update?",
+                choices: [roles, employees, departments]
             },
             {
                 name: "end",
