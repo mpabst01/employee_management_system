@@ -66,3 +66,21 @@ on department.id = role.department_id
 where managers.id = 3
 order by role.salary desc
 ;
+
+select distinct concat(managers.first_name,' ', managers.last_name) as name from employee as subs
+left join employee as managers
+on managers.id = subs.manager_id;
+
+select distinct 
+  concat(managers.first_name,' ', managers.last_name) as name, managers.id 
+  from employee as subs
+  left join employee as managers
+  on managers.id = subs.manager_id;
+
+
+select distinct 
+concat(managers.first_name,' ', managers.last_name) as wholeName, managers.id
+from employee as subs
+inner join employee as managers
+on managers.id = subs.manager_id
+where subs.manager_id <> "" ;
