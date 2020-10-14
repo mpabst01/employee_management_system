@@ -107,10 +107,10 @@ function addToTable() {
                     }
                 ])
                 .then((answers) => {
-                    const selectedRole = res_a.find(
+                    const chosenRole = res_a.find(
                         (row) => row.title === answers.role
                     );
-                    const selectedManager = res_b.find(
+                    const chosenManager = res_b.find(
                         (row) => row.name === answers.manager
                     );
 
@@ -119,8 +119,8 @@ function addToTable() {
                         {
                             first_name: answers.firstName,
                             last_name: answers.lastName,
-                            role_id: selectedRole.id,
-                            manager_id: selectedManager.id
+                            role_id: chosenRole.id,
+                            manager_id: chosenManager.id
                         },
                         (err) => {
                             if (err) {
@@ -184,7 +184,7 @@ function roleUpdate() {
             ])
             .then((answers) => {
 
-                const selectedEmployee = res_a.find(
+                const chosenEmployee = res_a.find(
                     (row) => row.name === answers.employee
                 );
 
@@ -212,7 +212,7 @@ function roleUpdate() {
 
                             return connection.query(
                                 "UPDATE employee SET employee.role_id = ? WHERE employee.id = ?",
-                                [chosenRole.id, selectedEmployee.id],
+                                [chosenRole.id, chosenEmployee.id],
                                 (err) => {
                                     if (err) {
                                         throw err;
